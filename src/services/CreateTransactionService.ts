@@ -32,7 +32,7 @@ class CreateTransactionService {
     const categoriesRepository = getRepository(Category);
 
     let storedCategory = await categoriesRepository.findOne({
-      where: { title: category },
+      where: { title: category.trim() },
     });
 
     if (!storedCategory) {
@@ -46,6 +46,15 @@ class CreateTransactionService {
       value,
       category_id: storedCategory.id,
     });
+
+    const balance = await transactionsRepository.getBalance();
+
+    if (
+      transaction.type === 'outcome' &&
+      balance.total - transaction.value < 0
+    ) {
+      throw new AppError('Balance cannot be negative');
+    }
 
     await transactionsRepository.save(transaction);
 
